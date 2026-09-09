@@ -4,29 +4,37 @@ ERP MCP 网关共享包（一期只读）。提供：MCP 只读工具框架、�
 
 > 风格约束：跟随 ERP 既有 Laravel 5.5 / PHP 7.0 代码风格——不写 `declare(strict_types)`、参数/返回值不加类型声明、构造器注入。
 
-## 安装（OMS / COMMON 侧）
+## 安装（OMS / IC / COMMON）
 
-`oms/composer.json` 增加本地 path 仓库并依赖：
+包名 `erp/mcp-kit`，源码在 [github.com/august6th/mcp-kit](https://github.com/august6th/mcp-kit)。**不要上 Packagist**，消费者用 VCS 源；**UUA 不装本包**。
+
+在 `composer.json` 增加：
 
 ```json
 "repositories": [
-    { "type": "path", "url": "../mcp-kit", "options": { "symlink": true } }
+    { "type": "vcs", "url": "https://github.com/august6th/mcp-kit.git" }
 ],
 "require": {
-    "erp/mcp-kit": "@dev"
+    "erp/mcp-kit": "^0.1"
 }
 ```
 
-然后在 OMS / COMMON 运行环境（PHP 7.x）里：
+必须在 Laradock **workspace**（PHP 7.1）里装，不要用宿主机 PHP 8：
 
 ```bash
-# OMS
-cd oms && composer update erp/mcp-kit --ignore-platform-reqs
-# COMMON
-cd common && composer update erp/mcp-kit --ignore-platform-reqs
+# 容器内，路径按挂载：/var/www/erp/{oms,ic,common}
+composer update erp/mcp-kit --ignore-platform-reqs --no-plugins
 ```
 
+装完后 `vendor/erp/mcp-kit` 是实目录（不是 `../mcp-kit` symlink）。OMS / IC / COMMON 会把 lock + vendor 一并提交。
+
 `extra.laravel.providers` 已声明 `McpKitServiceProvider`，Laravel 包自动发现会加载它。
+
+本地改 kit、尚未发版时，可临时把 path 源加回该仓联调，联调完删掉，避免 lock 再变回 path：
+
+```json
+{ "type": "path", "url": "../mcp-kit", "options": { "symlink": true } }
+```
 
 ## 新增一个工具
 
