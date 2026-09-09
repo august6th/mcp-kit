@@ -14,13 +14,18 @@ class ToolSchema
     public $description;
     public $parameters;
     public $upstreamPath;
+    public $businessLabel;
+    public $businessDescription;
 
-    public function __construct($name, $description, $parameters = [], $upstreamPath = null)
+    public function __construct($name, $description, $parameters = [], $upstreamPath = null, $business = [])
     {
         $this->name = $name;
         $this->description = $description;
         $this->parameters = is_array($parameters) ? $parameters : [];
         $this->upstreamPath = $upstreamPath;
+        $business = is_array($business) ? $business : [];
+        $this->businessLabel = isset($business['business_label']) ? $business['business_label'] : '';
+        $this->businessDescription = isset($business['business_description']) ? $business['business_description'] : '';
     }
 
     public function toArray()
@@ -86,6 +91,15 @@ class ToolSchema
             }
             if ($values !== null) {
                 $entry['values'] = $values;
+            }
+            if (isset($meta['business_label'])) {
+                $entry['business_label'] = $meta['business_label'];
+            }
+            if (isset($meta['business_description'])) {
+                $entry['business_description'] = $meta['business_description'];
+            }
+            if (isset($meta['business_values'])) {
+                $entry['business_values'] = $meta['business_values'];
             }
             if (isset($meta['min'])) {
                 $entry['min'] = $meta['min'];

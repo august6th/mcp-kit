@@ -10,7 +10,7 @@ use InvalidArgumentException;
  * php artisan mcp:sync-gateway —— 把本服务已注册的 MCP 工具清单一键同步到网关。
  *
  * 读取 config('mcp.tools')（与 mcp:docs 同源），逐个实例化工具、取其 schema()，
- * 组成网关 bulk-register 认的 manifest（{name, description, input_params, upstream_path}），
+ * 组成网关 bulk-register 认的 manifest（upstream_label + tools），
  * 用原生 curl POST 到 `{MCP_GATEWAY_URL}/admin/tools/bulk-register?upstream_key={MCP_GATEWAY_UPSTREAM_KEY}`，
  * 带 `Authorization: Bearer {MCP_GATEWAY_ADMIN_TOKEN}`。
  *
@@ -30,10 +30,11 @@ class SyncGatewayCommand extends Command
     {
         $gatewayUrl = env('MCP_GATEWAY_URL');
         $upstreamKey = env('MCP_GATEWAY_UPSTREAM_KEY');
+        $upstreamLabel = env('MCP_GATEWAY_UPSTREAM_LABEL');
         $adminToken = env('MCP_GATEWAY_ADMIN_TOKEN');
 
-        if (empty($gatewayUrl) || empty($upstreamKey) || empty($adminToken)) {
-            $this->error('缺少同步网关所需的配置：请确认 MCP_GATEWAY_URL / MCP_GATEWAY_UPSTREAM_KEY / MCP_GATEWAY_ADMIN_TOKEN 均已设置。');
+        if (empty($gatewayUrl) || empty($upstreamKey) || empty($upstreamLabel) || empty($adminToken)) {
+            $this->error('缺少同步网关所需的配置：请确认 MCP_GATEWAY_URL / MCP_GATEWAY_UPSTREAM_KEY / MCP_GATEWAY_UPSTREAM_LABEL / MCP_GATEWAY_ADMIN_TOKEN 均已设置。');
             return 1;
         }
 
@@ -45,14 +46,18 @@ class SyncGatewayCommand extends Command
         }
 
         try {
-            $tools = (new GatewayManifest())->build($toolInstances, $this->option('allow-empty'));
+            $manifest = (new GatewayManifest())->build(
+                $toolInstances,
+                $upstreamLabel,
+                $this->option('allow-empty')
+            );
         } catch (InvalidArgumentException $e) {
             $this->error($e->getMessage());
             return 1;
         }
 
         $url = rtrim($gatewayUrl, '/') . '/admin/tools/bulk-register?upstream_key=' . urlencode($upstreamKey);
-        $body = json_encode(['tools' => $tools], JSON_UNESCAPED_UNICODE);
+        $body = json_encode($manifest, JSON_UNESCAPED_UNICODE);
 
         $ch = curl_init($url);
         curl_setopt($ch, CURLOPT_POST, true);
@@ -83,7 +88,9 @@ class SyncGatewayCommand extends Command
             return 1;
         }
 
-        $upserted = is_array($decoded) && isset($decoded['upserted']) ? $decoded['upserted'] : count($tools);
+        $upserted = is_array($decoded) && isset($decoded['upserted'])
+            ? $decoded['upserted']
+            : count($manifest['tools']);
         $this->info("同步成功：upserted {$upserted} 个工具。");
         return 0;
     }

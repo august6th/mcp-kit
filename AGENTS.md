@@ -20,6 +20,11 @@ These rules mirror `CLAUDE.md` for Codex work in this directory.
 
 - `schema()` is the single source for MCP discovery, portal catalog, `mcp:docs`, and gateway synchronization.
 - The schema is the source of truth: change the tool schema first, then run synchronization; do not add migrations for business-tool metadata.
+- Every public tool schema MUST define model-facing `description` plus portal-facing `business_label` and `business_description`.
+- Every public parameter MUST define `business_label` and `business_description` without weakening its model-facing `description`.
+- Enum parameters MUST define `business_values` whose keys exactly match `values`.
+- Every upstream MUST configure `MCP_GATEWAY_UPSTREAM_LABEL`; synchronization fails closed when any required business metadata is missing.
+- Business metadata is portal-only and MUST NOT replace, shorten, or enter MCP model descriptions.
 - `FieldWhitelist` is default-deny. Every new tool must explicitly define output fields and PII behavior.
 - Every detail/list tool must define bounded output, pagination or aggregation, time-window limits, and an honest oversized-result response.
 - Prefer aggregate tools over returning detail rows. Detail tools have a hard page-size limit; true bulk work goes through ERP export jobs rather than an LLM response.

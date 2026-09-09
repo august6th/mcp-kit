@@ -1,0 +1,13 @@
+---
+description: MCP 工具、参数和枚举值必须同时维护模型版与业务版说明
+alwaysApply: true
+---
+
+# MCP 工具业务元数据强制规则
+
+- 每个公开工具的 `schema()` 必须定义给大模型看的 `description`，以及仅供门户展示的 `business_label`、`business_description`。
+- 每个公开参数必须定义 `business_label`、`business_description`，不得因此缩短、替换或删除模型侧 `description`。
+- 枚举参数必须定义 `business_values`，其键必须与 `values` 完全一致，值使用业务用户能理解的名称。
+- 每个业务服务必须在 `.env` 配置 `MCP_GATEWAY_UPSTREAM_LABEL`；业务域别名由 `mcp-kit` 同步，门户和网关不得硬编码。
+- 任一必需业务元数据缺失时，`mcp:sync-gateway` 必须拒绝整份权威清单，禁止部分同步。
+- 业务元数据只能供门户使用，绝不能进入 MCP `tools/list` 的模型说明。
