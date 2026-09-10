@@ -99,3 +99,15 @@ php artisan mcp:sync-gateway
 - **同步清单里绝不包含 `inject_policy`**——参数注入策略（如账号级过滤条件如何拼装）完全由网关侧治理，源服务/模块不可自行设置，也不该在这里出现。
 - 命令内部用 PHP 内置 `curl_*` 发请求（本包不依赖 guzzle），POST 到 `{MCP_GATEWAY_URL}/admin/tools/bulk-register?upstream_key={MCP_GATEWAY_UPSTREAM_KEY}`，带 `Authorization: Bearer {MCP_GATEWAY_ADMIN_TOKEN}`；成功打印 upserted 的工具数量，失败打印网关返回的错误信息。
 - 默认拒绝空清单。确需删除该 upstream 的最后一个工具时，显式执行 `php artisan mcp:sync-gateway --allow-empty`；网关会在同一事务中禁用全部旧工具。
+
+## 临时暂停指定工具
+
+运维需要紧急下线单个能力时，可人工暂停并在确认后恢复：
+
+```bash
+php artisan mcp:tool:disable oms_search_orders
+php artisan mcp:tool:enable oms_search_orders
+```
+
+人工暂停状态持久化在网关，普通 `mcp:sync-gateway` 不会自动恢复。命令只操作
+`MCP_GATEWAY_UPSTREAM_KEY` 对应业务域内的同名工具；如果工具已经从源服务权威清单删除，执行恢复命令也不会重新发布它。
