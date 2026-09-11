@@ -42,5 +42,26 @@ class GatewayToolStateClientTest extends TestCase
             'disabled' => true,
         ], json_decode($captured['body'], true));
         $this->assertTrue($result['operatorDisabled']);
+        $this->assertSame(200, $result['_http_status']);
+    }
+
+    public function testAcceptsCommittedStateWhenGatewayIsRetryingRefresh()
+    {
+        $client = new GatewayToolStateClient(function () {
+            return [
+                'status' => 202,
+                'body' => json_encode([
+                    'name' => 'oms_search_orders',
+                    'upstreamKey' => 'oms',
+                    'operatorDisabled' => true,
+                    'registry' => ['status' => 'retrying'],
+                ]),
+            ];
+        });
+
+        $result = $client->setDisabled('https://mcp.example.com', 'oms', 'admin-secret', 'oms_search_orders', true);
+
+        $this->assertSame(202, $result['_http_status']);
+        $this->assertSame('retrying', $result['registry']['status']);
     }
 }

@@ -27,7 +27,7 @@ abstract class GatewayToolStateCommand extends Command
         }
 
         try {
-            $this->client->setDisabled(
+            $result = $this->client->setDisabled(
                 $gatewayUrl,
                 $upstreamKey,
                 $adminToken,
@@ -40,7 +40,12 @@ abstract class GatewayToolStateCommand extends Command
         }
 
         $verb = $isDisabled ? '已暂停' : '已恢复';
-        $this->info($verb . ' MCP 工具：' . $this->argument('name'));
+        if ((isset($result['_http_status']) && (int)$result['_http_status'] === 202)
+            || (isset($result['registry']['status']) && $result['registry']['status'] === 'retrying')) {
+            $this->warn('工具状态已提交，客户端目录正在重试刷新：' . $this->argument('name'));
+        } else {
+            $this->info($verb . ' MCP 工具：' . $this->argument('name'));
+        }
         return 0;
     }
 }

@@ -4,7 +4,9 @@ namespace Erp\McpKit\Console;
 
 use Illuminate\Console\Command;
 use Erp\McpKit\Support\GatewayManifest;
+use Erp\McpKit\Support\GatewaySyncClient;
 use InvalidArgumentException;
+use RuntimeException;
 
 /**
  * php artisan mcp:sync-gateway —— 把本服务已注册的 MCP 工具清单一键同步到网关。
@@ -21,6 +23,14 @@ use InvalidArgumentException;
  */
 class SyncGatewayCommand extends Command
 {
+    private $client;
+
+    public function __construct(GatewaySyncClient $client)
+    {
+        parent::__construct();
+        $this->client = $client;
+    }
+
     protected $signature = 'mcp:sync-gateway
                             {--allow-empty : 允许发送空清单，以禁用该 upstream 的全部旧工具}';
 
@@ -56,42 +66,22 @@ class SyncGatewayCommand extends Command
             return 1;
         }
 
-        $url = rtrim($gatewayUrl, '/') . '/admin/tools/bulk-register?upstream_key=' . urlencode($upstreamKey);
-        $body = json_encode($manifest, JSON_UNESCAPED_UNICODE);
-
-        $ch = curl_init($url);
-        curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, $body);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, [
-            'Content-Type: application/json',
-            'Authorization: Bearer ' . $adminToken,
-        ]);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-
-        $response = curl_exec($ch);
-
-        if ($response === false) {
-            $error = curl_error($ch);
-            curl_close($ch);
-            $this->error('同步网关失败（网络错误）：' . $error);
-            return 1;
-        }
-
-        $statusCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
-
-        $decoded = json_decode($response, true);
-
-        if ($statusCode < 200 || $statusCode >= 300) {
-            $message = is_array($decoded) && isset($decoded['error']) ? $decoded['error'] : $response;
-            $this->error("同步网关失败（HTTP {$statusCode}）：" . $message);
+        try {
+            $decoded = $this->client->sync($gatewayUrl, $upstreamKey, $adminToken, $manifest);
+        } catch (RuntimeException $e) {
+            $this->error($e->getMessage());
             return 1;
         }
 
         $upserted = is_array($decoded) && isset($decoded['upserted'])
             ? $decoded['upserted']
             : count($manifest['tools']);
-        $this->info("同步成功：upserted {$upserted} 个工具。");
+        if ((isset($decoded['_http_status']) && (int)$decoded['_http_status'] === 202)
+            || (isset($decoded['registry']['status']) && $decoded['registry']['status'] === 'retrying')) {
+            $this->warn('工具状态已提交，客户端目录正在重试刷新');
+        } else {
+            $this->info("同步成功：upserted {$upserted} 个工具。");
+        }
         return 0;
     }
 }

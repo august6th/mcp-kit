@@ -42,6 +42,7 @@ class GatewayToolStateClient
         if (! is_array($decoded) || ! isset($decoded['operatorDisabled'])) {
             throw new RuntimeException('修改 MCP 工具状态失败：网关返回格式异常');
         }
+        $decoded['_http_status'] = $status;
         return $decoded;
     }
 
