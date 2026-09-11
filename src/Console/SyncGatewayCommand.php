@@ -38,29 +38,19 @@ class SyncGatewayCommand extends Command
 
     public function handle()
     {
-        $gatewayUrl = env('MCP_GATEWAY_URL');
-        $upstreamKey = env('MCP_GATEWAY_UPSTREAM_KEY');
-        $upstreamLabel = env('MCP_GATEWAY_UPSTREAM_LABEL');
-        $adminToken = env('MCP_GATEWAY_ADMIN_TOKEN');
+        $settings = $this->gatewaySettings();
+        $gatewayUrl = $settings['gateway_url'];
+        $upstreamKey = $settings['upstream_key'];
+        $upstreamLabel = $settings['upstream_label'];
+        $adminToken = $settings['admin_token'];
 
         if (empty($gatewayUrl) || empty($upstreamKey) || empty($upstreamLabel) || empty($adminToken)) {
             $this->error('缺少同步网关所需的配置：请确认 MCP_GATEWAY_URL / MCP_GATEWAY_UPSTREAM_KEY / MCP_GATEWAY_UPSTREAM_LABEL / MCP_GATEWAY_ADMIN_TOKEN 均已设置。');
             return 1;
         }
 
-        $toolClasses = config('mcp.tools', []);
-        $toolInstances = [];
-
-        foreach ($toolClasses as $toolClass) {
-            $toolInstances[] = app($toolClass);
-        }
-
         try {
-            $manifest = (new GatewayManifest())->build(
-                $toolInstances,
-                $upstreamLabel,
-                $this->option('allow-empty')
-            );
+            $manifest = $this->buildManifest($upstreamLabel, $this->allowEmpty());
         } catch (InvalidArgumentException $e) {
             $this->error($e->getMessage());
             return 1;
@@ -83,5 +73,29 @@ class SyncGatewayCommand extends Command
             $this->info("同步成功：upserted {$upserted} 个工具。");
         }
         return 0;
+    }
+
+    protected function gatewaySettings()
+    {
+        return [
+            'gateway_url' => env('MCP_GATEWAY_URL'),
+            'upstream_key' => env('MCP_GATEWAY_UPSTREAM_KEY'),
+            'upstream_label' => env('MCP_GATEWAY_UPSTREAM_LABEL'),
+            'admin_token' => env('MCP_GATEWAY_ADMIN_TOKEN'),
+        ];
+    }
+
+    protected function buildManifest($upstreamLabel, $allowEmpty)
+    {
+        $toolInstances = [];
+        foreach (config('mcp.tools', []) as $toolClass) {
+            $toolInstances[] = app($toolClass);
+        }
+        return (new GatewayManifest())->build($toolInstances, $upstreamLabel, $allowEmpty);
+    }
+
+    protected function allowEmpty()
+    {
+        return $this->option('allow-empty');
     }
 }
