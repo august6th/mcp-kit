@@ -33,6 +33,14 @@ These rules mirror `CLAUDE.md` for Codex work in this directory.
 - The sync payload must not contain secrets, scripts, SQL, or executable authorization logic.
 - Gateway synchronization is fail-closed: reject any invalid tool/schema/path, never send a partial authoritative manifest, and require explicit `--allow-empty` before removing the final tool.
 
+## Gateway runtime synchronization contract
+
+- Tool publication and operator state changes MUST call the running Gateway Admin HTTP API; mcp-kit must never write the Gateway database directly.
+- Treat HTTP 200/201 as completed registry refresh and HTTP 202 as committed-but-retrying. Report 202 explicitly and never claim that Cursor acknowledged or refreshed the update.
+- The Gateway owns the single atomically replaced strict registry snapshot, per-call activity checks, Session lifecycle, and `notifications/tools/list_changed`; mcp-kit only publishes the authoritative manifest or operator state.
+- The current deployment has one Gateway. Do not add Redis broadcasts, database registry versions, sticky sessions, or multi-instance assumptions to mcp-kit.
+- Do not claim hot synchronization complete without Gateway SDK, Cursor 3.19.13, deployed reverse-proxy, and restart/reconnect evidence.
+
 ## Security
 
 - `McpSignatureCheck` remains isolated from the existing `InnerSignatureCheck` implementation.

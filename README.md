@@ -98,6 +98,7 @@ php artisan mcp:sync-gateway
 - 任一工具或参数缺少业务名称、业务说明，或枚举 `business_values` 与 `values` 不完全一致时，整次同步失败。业务字段只供门户使用，不得替换或拼接进大模型看到的 `description`。
 - **同步清单里绝不包含 `inject_policy`**——参数注入策略（如账号级过滤条件如何拼装）完全由网关侧治理，源服务/模块不可自行设置，也不该在这里出现。
 - 命令内部用 PHP 内置 `curl_*` 发请求（本包不依赖 guzzle），POST 到 `{MCP_GATEWAY_URL}/admin/tools/bulk-register?upstream_key={MCP_GATEWAY_UPSTREAM_KEY}`，带 `Authorization: Bearer {MCP_GATEWAY_ADMIN_TOKEN}`；成功打印 upserted 的工具数量，失败打印网关返回的错误信息。
+- 网关返回 HTTP **200**（普通同步）或 **201**（网关直接创建单工具时）表示管理写入和注册表刷新已完成；HTTP **202** 表示数据库事务已提交，但 Gateway 注册表正在重试刷新。命令必须保留并提示“已提交、正在重试”，不得声称 Cursor 或其他客户端已经刷新。
 - 默认拒绝空清单。确需删除该 upstream 的最后一个工具时，显式执行 `php artisan mcp:sync-gateway --allow-empty`；网关会在同一事务中禁用全部旧工具。
 
 ## 临时暂停指定工具
@@ -111,3 +112,5 @@ php artisan mcp:tool:enable oms_search_orders
 
 人工暂停状态持久化在网关，普通 `mcp:sync-gateway` 不会自动恢复。命令只操作
 `MCP_GATEWAY_UPSTREAM_KEY` 对应业务域内的同名工具；如果工具已经从源服务权威清单删除，执行恢复命令也不会重新发布它。
+
+同步完成后，Gateway 会向受影响的有状态 MCP Session 发送一次 `notifications/tools/list_changed`；mcp-kit 不持有 Session，也无法获得客户端 ACK，因此 CLI 输出只描述网关提交/刷新状态，不描述客户端 UI 状态。

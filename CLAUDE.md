@@ -20,6 +20,8 @@
 - **业务域名称由服务配置**：每个 upstream 必须配置 `MCP_GATEWAY_UPSTREAM_LABEL`，不得在门户或网关代码中硬编码 `COMMON` / `IC` / `OMS` 等业务别名。任一必需业务元数据缺失时同步必须 fail-closed。
 - **模型与门户说明隔离**：业务元数据只能进入门户目录，绝不能替换、拼接或泄漏到 MCP `tools/list` 的模型说明中。
 - **同步 fail-closed**：`mcp:sync-gateway` 是权威清单 reconcile；任一工具类型/schema/upstream_path 非法时整次失败，禁止跳过后发送部分清单；清空最后一个工具必须显式使用 `--allow-empty`。
+- **运行期写入边界**：工具发布和人工暂停/恢复只能调用正在运行的 Gateway Admin HTTP API，mcp-kit 不得直接写网关数据库。HTTP 200/201 表示刷新完成；HTTP 202 表示数据库状态已提交但注册表正在重试，命令必须明确提示该语义，绝不能声称 Cursor 已确认或已刷新。
+- **热同步验收门槛**：Session、`notifications/tools/list_changed`、调用期启停检查和原子快照由单个 Gateway 负责；当前单 Gateway 不得引入 Redis 广播、registry version 或粘性会话。没有 Gateway SDK、Cursor 3.19.13、真实反向代理和重启/重连证据，不得声称热同步完成。
 - **枚举/状态参数的 `description` 必须逐值列含义**：`schema()` 里状态/枚举类入参（如 `order_status`）的 `description` 要逐一写清取值含义（例：`订单状态：1=处理中，2=已完结，3=已取消`），并与本服务代码里的取值（枚举常量/DB 列 COMMENT）严格一致。这段 `description` 经 `mcp:sync-gateway` 落到网关 `mcp_tools.input_params`，网关再经 `.describe()` 带进工具 `inputSchema`——**这是大模型唯一能看到枚举含义的地方**（模型只读 `tools/list`）。改了含义走 `mcp:sync-gateway` 重新 upsert，**不新增迁移**。
 - **安全**：`FieldWhitelist` 默认拒绝、显式白名单出参并剔除买家 PII；`McpSignatureCheck` 克隆自 `InnerSignatureCheck`，不改原件（D11）。审计接口在源服务默认空实现（`NullAuditLogger`），完整审计在网关侧。
 

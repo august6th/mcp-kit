@@ -1,0 +1,13 @@
+---
+description: mcp-kit 到 Gateway 的运行期同步和验收契约
+globs: ["src/**/*.php", "tests/**/*.php", "README.md", "CLAUDE.md", "AGENTS.md"]
+alwaysApply: true
+---
+
+# mcp-kit 运行期同步强制规则
+
+- `mcp:sync-gateway`、`mcp:tool:disable` 和 `mcp:tool:enable` 必须通过正在运行的 Gateway Admin HTTP API，禁止直接写网关数据库。
+- 200/201 表示网关已完成刷新；202 表示状态已提交但注册表正在重试。命令必须保留该区别，不得输出“Cursor 已更新”或“客户端已确认”。
+- `schema()` 仍是模型、门户、文档和同步的唯一来源；业务域别名来自业务服务 `.env` 的 `MCP_GATEWAY_UPSTREAM_LABEL`，不得在网关或门户硬编码。
+- 单 Gateway 由网关维护原子快照、Session 和 `tools/list_changed`，mcp-kit 不实现 Redis 广播、registry version、粘性会话或多实例协调。
+- 未有 Gateway SDK、Cursor 3.19.13、实际反向代理和重启/重连证据，不得宣称热同步完成。
