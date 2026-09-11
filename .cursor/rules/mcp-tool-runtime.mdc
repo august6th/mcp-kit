@@ -1,6 +1,6 @@
 ---
 description: mcp-kit 到 Gateway 的运行期同步和验收契约
-globs: ["src/**/*.php", "tests/**/*.php", "README.md", "CLAUDE.md", "AGENTS.md"]
+globs: ["src/**/*.php", "tests/**/*.php", "docs/**/*.md", "README.md", "CLAUDE.md", "AGENTS.md"]
 alwaysApply: true
 ---
 
