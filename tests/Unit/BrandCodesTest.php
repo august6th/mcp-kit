@@ -9,7 +9,8 @@ class BrandCodesTest extends TestCase
     {
         $this->assertSame(['A'], BrandCodes::resolve(['A', 'B'], ['A'], false));
         $this->assertSame(['unknown'], BrandCodes::resolve(['A'], ['B'], false));
-        $this->assertSame(['unknown'], BrandCodes::resolve([], [], false));
+        $this->assertSame([], BrandCodes::resolve([], [], false));
+        $this->assertSame(['B'], BrandCodes::resolve([], ['B'], false));
         $this->assertSame([], BrandCodes::resolve(['A'], ['B'], true));
     }
 }

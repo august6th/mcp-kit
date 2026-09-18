@@ -7,12 +7,12 @@ namespace Erp\McpKit\Support;
  *
  * 语义对齐 OMS App\Services\Common\Params::withPermissions：
  *  - 超管（isSuperuser=true）：不限制，返回 []（下游 whereIn 空数组=不加过滤=查全部）
- *  - 非超管、无授权账号：返回 ['unknown'] 哨兵（查不到任何数据）
- *  - 非超管、有授权账号：
+ *  - 授权账号为空：不限制；无 requested 返回 []，有 requested 则按 requested 收窄
+ *  - 有授权账号：
  *      · AI 未指定 requested：用用户授权全集
  *      · AI 指定 requested：授权全集 ∩ requested；交集为空 → ['unknown']（越权即全拒绝）
  *
- * 关键点：权限来自签名注入的授权集，AI 只能在授权集内收窄，永远无法越权放大。
+ * 关键点：非空授权集时 AI 只能收窄不能放大；空授权集与超管一样表示全部店铺。
  */
 class AccountCodes
 {
@@ -29,11 +29,11 @@ class AccountCodes
         }
 
         $userCodes = self::normalize($userCodes);
+        $requested = self::normalize($requested);
         if (empty($userCodes)) {
-            return ['unknown'];
+            return $requested;
         }
 
-        $requested = self::normalize($requested);
         if (empty($requested)) {
             return array_values($userCodes);
         }

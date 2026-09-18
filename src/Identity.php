@@ -6,7 +6,7 @@ namespace Erp\McpKit;
  * 调用人身份值对象。
  *
  * 收敛"从 login_user 结构解析身份"这一步，将来切 OIDC 时只需改 fromLoginUser 的映射。
- * account_codes/brand_codes 是调用人被授权的数据范围；is_superuser 为空账号=不限制的语义标记。
+ * account_codes/brand_codes 是调用人被授权的数据范围；空数组=不限制。is_superuser 供工具级授权旁路。
  */
 class Identity
 {

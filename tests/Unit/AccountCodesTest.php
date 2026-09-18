@@ -11,9 +11,10 @@ class AccountCodesTest extends TestCase
         $this->assertSame(['unknown'], AccountCodes::resolve(['A'], ['B'], false));
     }
 
-    public function testEmptyAuthorizationFailsClosed()
+    public function testEmptyAuthorizationIsUnrestricted()
     {
-        $this->assertSame(['unknown'], AccountCodes::resolve([], [], false));
+        $this->assertSame([], AccountCodes::resolve([], [], false));
+        $this->assertSame(['B'], AccountCodes::resolve([], ['B'], false));
     }
 
     public function testSuperuserIsUnrestricted()
