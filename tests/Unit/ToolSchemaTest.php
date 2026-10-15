@@ -61,4 +61,17 @@ class ToolSchemaTest extends TestCase
             ],
         ], $schema->toGatewayParamSpec());
     }
+
+    public function testJsonTypeIsPassedThroughForNestedParameters()
+    {
+        $schema = new ToolSchema('analytics', 'Analytics', [
+            'metrics' => ['type' => 'json', 'description' => '字符串或公式对象数组'],
+            'filters' => ['type' => 'array'],
+        ], '/inner/mcp/analytics');
+
+        $this->assertSame([
+            ['name' => 'metrics', 'type' => 'json', 'required' => false, 'description' => '字符串或公式对象数组'],
+            ['name' => 'filters', 'type' => 'array', 'required' => false],
+        ], $schema->toGatewayParamSpec());
+    }
 }

@@ -47,7 +47,8 @@ class ToolSchema
      *  - 'int' / 'integer'            → 'integer'
      *  - 'float' / 'double' / 'number' → 'number'
      *  - 'bool' / 'boolean'           → 'boolean'
-     *  - 'array'                      → 'array'
+     *  - 'array'                      → 'array'（字符串数组）
+     *  - 'json'                       → 'json'（任意非 null 的 JSON 值，可嵌套对象/数组）
      *  - 其余（含未设置）             → 'string'
      *  - 若内部定义了 'values' 或 'enum'（非空数组），不管上面推出的 type 是什么，
      *    一律覆盖为 'enum'，并把该数组原样放进网关 spec 的 'values'。
@@ -137,6 +138,8 @@ class ToolSchema
                 return 'boolean';
             case 'array':
                 return 'array';
+            case 'json':
+                return 'json';
             case 'enum':
                 return 'enum';
             default:
